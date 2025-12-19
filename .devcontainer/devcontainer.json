@@ -1,0 +1,36 @@
+{
+  "name": "Java Spring AI Microservices",
+  "dockerComposeFile": "../docker-compose.yml",
+  "service": "codespace",
+  "workspaceFolder": "/workspace",
+  "features": {
+    "ghcr.io/devcontainers/features/java:1": {
+      "version": "17",
+      "installMaven": true,
+      "installGradle": true
+    },
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "18"
+    },
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {}
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "vmware.vscode-spring-boot",
+        "vscjava.vscode-java-pack",
+        "redhat.java",
+        "ms-azuretools.vscode-docker",
+        "GitHub.copilot",
+        "GitHub.copilot-chat"
+      ],
+      "settings": {
+        "java.compile.nullAnalysis.mode": "automatic",
+        "spring-boot.ls.java.home": "/usr/local/sdkman/candidates/java/current"
+      }
+    }
+  },
+  "forwardPorts": [8080, 8081, 8082, 8083, 9090],
+  "postCreateCommand": "mvn clean compile -DskipTests",
+  "remoteUser": "vscode"
+}
