@@ -12,16 +12,62 @@ echo "Workspace: $WORKSPACE"
 
 if command -v devcontainer >/dev/null 2>&1; then
   echo "devcontainer CLI already installed — rebuilding container..."
-  devcontainer rebuild --workspace-folder "$WORKSPACE"
-  exit 0
+  # try multiple common invocations
+  try_cmds=(
+    "devcontainer rebuild --workspace-folder \"$WORKSPACE\""
+    "devcontainer rebuild \"$WORKSPACE\""
+    "devcontainer up --workspace-folder \"$WORKSPACE\" --rebuild"
+    "devcontainers rebuild --workspace-folder \"$WORKSPACE\""
+    "devcontainers up --workspace-folder \"$WORKSPACE\" --rebuild"
+  )
+  for c in "${try_cmds[@]}"; do
+    echo "+ $c"
+    if eval $c; then
+      echo "Rebuild succeeded with: $c"
+      exit 0
+    else
+      echo "Command failed: $c — trying next..."
+    fi
+  done
+  echo "devcontainer CLI present but none of the recognized commands worked."
+  exit 1
 fi
 
 if command -v npm >/dev/null 2>&1; then
   echo "Installing @devcontainers/cli via npm..."
   npm install -g @devcontainers/cli
-  echo "Rebuilding container..."
-  devcontainer rebuild --workspace-folder "$WORKSPACE"
-  exit 0
+  # after installing, try the invocations above
+  if command -v devcontainer >/dev/null 2>&1; then
+    echo "devcontainer installed — attempting rebuild variants..."
+    try_cmds=(
+      "devcontainer rebuild --workspace-folder \"$WORKSPACE\""
+      "devcontainer rebuild \"$WORKSPACE\""
+      "devcontainer up --workspace-folder \"$WORKSPACE\" --rebuild"
+      "devcontainers rebuild --workspace-folder \"$WORKSPACE\""
+      "devcontainers up --workspace-folder \"$WORKSPACE\" --rebuild"
+    )
+    for c in "${try_cmds[@]}"; do
+      echo "+ $c"
+      if eval $c; then
+        echo "Rebuild succeeded with: $c"
+        exit 0
+      else
+        echo "Command failed: $c — trying next..."
+      fi
+    done
+  fi
+  # fallback to npx remote runner
+  echo "Falling back to npx @devcontainers/cli..."
+  if command -v npx >/dev/null 2>&1; then
+    if npx @devcontainers/cli@latest rebuild --workspace-folder "$WORKSPACE"; then
+      exit 0
+    fi
+    if npx @devcontainers/cli@latest up --workspace-folder "$WORKSPACE" --rebuild; then
+      exit 0
+    fi
+  fi
+  echo "All attempts failed after npm install."
+  exit 1
 fi
 
 # Determine package manager and install node/npm
@@ -50,9 +96,37 @@ fi
 if command -v npm >/dev/null 2>&1; then
   echo "Installing @devcontainers/cli via npm..."
   npm install -g @devcontainers/cli
-  echo "Rebuilding container..."
-  devcontainer rebuild --workspace-folder "$WORKSPACE"
-  exit 0
+  # try variants after installing
+  if command -v devcontainer >/dev/null 2>&1; then
+    echo "devcontainer installed — attempting rebuild variants..."
+    try_cmds=(
+      "devcontainer rebuild --workspace-folder \"$WORKSPACE\""
+      "devcontainer rebuild \"$WORKSPACE\""
+      "devcontainer up --workspace-folder \"$WORKSPACE\" --rebuild"
+      "devcontainers rebuild --workspace-folder \"$WORKSPACE\""
+      "devcontainers up --workspace-folder \"$WORKSPACE\" --rebuild"
+    )
+    for c in "${try_cmds[@]}"; do
+      echo "+ $c"
+      if eval $c; then
+        echo "Rebuild succeeded with: $c"
+        exit 0
+      else
+        echo "Command failed: $c — trying next..."
+      fi
+    done
+  fi
+  # fallback to npx
+  if command -v npx >/dev/null 2>&1; then
+    if npx @devcontainers/cli@latest rebuild --workspace-folder "$WORKSPACE"; then
+      exit 0
+    fi
+    if npx @devcontainers/cli@latest up --workspace-folder "$WORKSPACE" --rebuild; then
+      exit 0
+    fi
+  fi
+  echo "Failed to rebuild after installing devcontainer CLI."
+  exit 1
 fi
 
 echo "Failed to install Node/npm or devcontainer CLI. Please install them manually and re-run this script."
